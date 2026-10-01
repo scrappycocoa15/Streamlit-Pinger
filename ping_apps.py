@@ -25,9 +25,12 @@ from datetime import datetime, timezone
 # ── Add your app URLs here ────────────────────────────────────────────────────
 
 APPS = [
-    # "https://your-first-app.streamlit.app",
-    # "https://your-second-app.streamlit.app",
-    # "https://your-third-app.streamlit.app",
+    # "https://scrappycocoa15-account-assi-account-assignment-validator-b4uowv.streamlit.app",
+    # "https://global-smb-client-sales-performance-dashboard.streamlit.app",
+    # "https://acct-transition-app-bw44z4vo94mqw2mgsubkqc.streamlit.app",
+    # "https://smb-client-sales-performance-dashboard-fnbeugwlcwmxwvtgwneup3.streamlit.app",
+    # "https://smb-watermark-tool-usclientsales.streamlit.app",
+    # "https://watermark-appglobal-smb.streamlit.app",
 ]
 
 # ── Settings ──────────────────────────────────────────────────────────────────
