@@ -1,0 +1,37 @@
+name: Ping Streamlit Apps
+
+on:
+  push:
+    branches: [main]
+
+  schedule:
+    #  Runs every 3 days at 10:00 AM UTC.
+    #  Cron format: minute  hour  day-of-month  month  day-of-week
+    - cron: '0 10 */3 * *'
+
+  # Also allows you to trigger it manually from the GitHub Actions tab
+  # (useful for testing or waking apps immediately).
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping apps
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests playwright
+
+      - name: Install Playwright browsers
+        run: playwright install --with-deps chromium
+
+      - name: Run pinger
+        run: python ping_apps.py
