@@ -28,9 +28,15 @@ from datetime import datetime, timezone
 # ── Add your app URLs here ────────────────────────────────────────────────────
 
 APPS = [
-    # "https://your-first-app.streamlit.app",
-    # "https://your-second-app.streamlit.app",
-    # "https://your-third-app.streamlit.app",
+    # "https://github.wdf.sap.corp/pages/I521094/Split-Calculator",
+    # "https://watermark-appglobal-smb.streamlit.app",
+    # "https://smb-watermark-tool-usclientsales.streamlit.app",
+    # "https://global-smb-client-sales-performance-dashboard.streamlit.app",
+    # "https://smb-client-sales-performance-dashboard-fnbeugwlcwmxwvtgwneup3.streamlit.app",
+    # "https://account-reassignment-app-xbtckvpir.streamlit.app",
+    # "https://acct-transition-app-bw44z4vo94mqw2mgsubkqc.streamlit.app",
+    # "https://former-customers-pbmqfhyxzucvgnltgrawxy.streamlit.app",
+    # "https://smb-account-assignment-validator.streamlit.app",
 ]
 
 # ── Settings ──────────────────────────────────────────────────────────────────
