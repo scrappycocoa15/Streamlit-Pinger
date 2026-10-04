@@ -5,9 +5,9 @@ on:
     branches: [main]
 
   schedule:
-    #  Runs every 3 days at 10:00 AM UTC.
+    #  Runs every day at 10:00 AM UTC.
     #  Cron format: minute  hour  day-of-month  month  day-of-week
-    - cron: '0 10 */3 * *'
+    - cron: '0 10 * * *'
 
   # Also allows you to trigger it manually from the GitHub Actions tab
   # (useful for testing or waking apps immediately).
@@ -17,6 +17,10 @@ jobs:
   ping:
     name: Ping apps
     runs-on: ubuntu-latest
+
+    # Needed so the workflow can commit back to the repo to stay active
+    permissions:
+      contents: write
 
     steps:
       - name: Check out repo
@@ -35,3 +39,10 @@ jobs:
 
       - name: Run pinger
         run: python ping_apps.py
+
+      - name: Keep repo active
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keep repo active [skip ci]"
+          git push
