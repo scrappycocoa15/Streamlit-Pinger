@@ -58,6 +58,17 @@ def ping(page, url: str) -> tuple[bool, int, str]:
         response = page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_SECONDS * 1_000)
         status_code = response.status if response else 0
 
+        # Wait for React to render — either the live app or the sleep page.
+        # "domcontentloaded" fires before React paints anything, so without
+        # this wait the sleep text isn't in the DOM yet when we check.
+        try:
+            page.wait_for_selector(
+                "[data-testid='stApp'], text=gone to sleep",
+                timeout=15_000,
+            )
+        except PlaywrightTimeoutError:
+            pass  # Neither appeared within 15s — proceed with whatever is there
+
         # Detect the sleep page from the rendered content
         if page.locator("text=gone to sleep").count() > 0:
             print(f"          App is sleeping — trying to wake it up...")
