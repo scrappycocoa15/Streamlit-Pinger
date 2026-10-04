@@ -34,7 +34,7 @@ APPS = [
     "https://account-reassignment-app-xbtckvpir.streamlit.app",
     "https://acct-transition-app-bw44z4vo94mqw2mgsubkqc.streamlit.app",
     "https://former-customers-pbmqfhyxzucvgnltgrawxy.streamlit.app",
-    "https://smb-account-assignment-validator.streamlit.app",
+    "https://smb-account-assignment-validator-v2.streamlit.app",
 ]
 
 # ── Settings ──────────────────────────────────────────────────────────────────
@@ -61,11 +61,12 @@ def ping(page, url: str) -> tuple[bool, int, str]:
         # Wait for React to render — either the live app or the sleep page.
         # "domcontentloaded" fires before React paints anything, so without
         # this wait the sleep text isn't in the DOM yet when we check.
+        # NOTE: text= is a Playwright-only selector and can't be mixed with
+        # CSS in a single string — use .or_() to combine the two locators.
         try:
-            page.wait_for_selector(
-                "[data-testid='stApp'], text=gone to sleep",
-                timeout=15_000,
-            )
+            page.locator("[data-testid='stApp']").or_(
+                page.locator("text=gone to sleep")
+            ).first.wait_for(timeout=15_000)
         except PlaywrightTimeoutError:
             pass  # Neither appeared within 15s — proceed with whatever is there
 
