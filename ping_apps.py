@@ -34,7 +34,7 @@ APPS = [
     "https://account-reassignment-app-xbtckvpir.streamlit.app",
     "https://acct-transition-app-bw44z4vo94mqw2mgsubkqc.streamlit.app",
     "https://former-customers-pbmqfhyxzucvgnltgrawxy.streamlit.app",
-    "https://smb-account-assignment-validator-v2.streamlit.app",
+    "https://smb-account-assignment-validator-v3.streamlit.app",
 ]
 
 # ── Settings ──────────────────────────────────────────────────────────────────
