@@ -35,6 +35,8 @@ APPS = [
     "https://acct-transition-app-bw44z4vo94mqw2mgsubkqc.streamlit.app",
     "https://former-customers-pbmqfhyxzucvgnltgrawxy.streamlit.app",
     "https://smb-account-assignment-validator-v3.streamlit.app",
+    "https://concur-smb-sales-tools-central.streamlit.app",
+    "https://concur-smb-team-tools-central.streamlit.app"
 ]
 
 # ── Settings ──────────────────────────────────────────────────────────────────
