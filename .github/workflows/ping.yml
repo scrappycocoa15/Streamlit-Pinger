@@ -1,6 +1,9 @@
 name: Ping Streamlit Apps
 
 on:
+  push:
+    branches: [main]
+
   schedule:
     #  Runs every 3 days at 10:00 AM UTC.
     #  Cron format: minute  hour  day-of-month  month  day-of-week
@@ -25,7 +28,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests playwright
+
+      - name: Install Playwright browsers
+        run: playwright install --with-deps chromium
 
       - name: Run pinger
         run: python ping_apps.py
