@@ -14,107 +14,85 @@ Usage
 How it works
 ------------
 Streamlit Community Cloud sleeps an app after ~7 days with no traffic.
-This script sends an HTTP GET to each URL every 3 days. If the app is
-awake, that's all it takes. If the app is sleeping (Streamlit returns a
-"gone to sleep" page), a headless Chromium browser is launched to click
-the wake-up button and wait for the app to fully load — exactly as a
-real user would.
+This script uses a headless Chromium browser to visit each URL every 3
+days, exactly as a real user would. If an app is awake, it checks out
+fine. If it's sleeping, the browser sees the sleep page (which a plain
+HTTP GET cannot), clicks "Yes, get this app back up!", and waits for the
+live app to load — resetting the inactivity timer properly.
 """
 
 import sys
-import requests
 from datetime import datetime, timezone
 
 # ── Add your app URLs here ────────────────────────────────────────────────────
 
 APPS = [
-     "https://github.wdf.sap.corp/pages/I521094/Split-Calculator",
-     "https://watermark-appglobal-smb.streamlit.app",
-     "https://smb-watermark-tool-usclientsales.streamlit.app",
-     "https://global-smb-client-sales-performance-dashboard.streamlit.app",
-     "https://smb-client-sales-performance-dashboard-fnbeugwlcwmxwvtgwneup3.streamlit.app",
-     "https://account-reassignment-app-xbtckvpir.streamlit.app",
-     "https://acct-transition-app-bw44z4vo94mqw2mgsubkqc.streamlit.app",
-     "https://former-customers-pbmqfhyxzucvgnltgrawxy.streamlit.app",
-     "https://smb-account-assignment-validator.streamlit.app",
+    "https://watermark-appglobal-smb.streamlit.app",
+    "https://smb-watermark-tool-usclientsales.streamlit.app",
+    "https://global-smb-client-sales-performance-dashboard.streamlit.app",
+    "https://smb-client-sales-performance-dashboard-fnbeugwlcwmxwvtgwneup3.streamlit.app",
+    "https://account-reassignment-app-xbtckvpir.streamlit.app",
+    "https://acct-transition-app-bw44z4vo94mqw2mgsubkqc.streamlit.app",
+    "https://former-customers-pbmqfhyxzucvgnltgrawxy.streamlit.app",
+    "https://smb-account-assignment-validator.streamlit.app",
 ]
 
 # ── Settings ──────────────────────────────────────────────────────────────────
 
-TIMEOUT_SECONDS = 30       # HTTP GET timeout
-WAKE_TIMEOUT_SECONDS = 120  # How long to wait for a sleeping app to wake up
-
-# ── Wake-up logic (headless browser) ──────────────────────────────────────────
-
-def wake_up_sleeping_app(url: str, wake_timeout: int = WAKE_TIMEOUT_SECONDS) -> tuple[bool, str]:
-    """
-    Launch a headless Chromium browser to wake a sleeping Streamlit app.
-
-    Streamlit's sleep page returns HTTP 200 but is a static HTML page with a
-    "Yes, get this app back up!" button. A plain HTTP GET never executes that
-    button, so the app stays sleeping. This function does what a real browser
-    would: click the button and wait for the live app to appear.
-
-    Returns (success, message).
-    """
-    from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        try:
-            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-
-            # Click the wake-up button ("Yes, get this app back up!")
-            try:
-                page.locator("button:has-text('Yes')").first.click(timeout=5_000)
-            except PlaywrightTimeoutError:
-                pass  # No button found — some versions auto-wake on navigation
-
-            # Wait until Streamlit's root element appears (live app is running)
-            try:
-                page.wait_for_selector(
-                    "[data-testid='stApp']",
-                    timeout=wake_timeout * 1_000,
-                )
-                return True, "Woken up successfully"
-            except PlaywrightTimeoutError:
-                # Fallback: accept it if the sleep text has at least disappeared
-                if "gone to sleep" not in page.content().lower():
-                    return True, "Woken up (app responded)"
-                return False, f"App did not wake within {wake_timeout}s"
-
-        except PlaywrightTimeoutError:
-            return False, "Timed out navigating to the app"
-        except Exception as e:
-            return False, f"Browser error — {e}"
-        finally:
-            browser.close()
+NAV_TIMEOUT_SECONDS  = 30   # Seconds to wait for the page to load
+WAKE_TIMEOUT_SECONDS = 120  # Seconds to wait for a sleeping app to wake up
 
 # ── Ping logic ────────────────────────────────────────────────────────────────
 
-def ping(url: str) -> tuple[bool, int, str]:
-    """GET the URL. If the app is sleeping, wake it with a headless browser."""
+def ping(page, url: str) -> tuple[bool, int, str]:
+    """
+    Navigate to url with a headless browser page and return (ok, status, msg).
+
+    Streamlit's sleep page is JavaScript-rendered, so a plain HTTP GET
+    never sees the "gone to sleep" text — the browser does. Using Playwright
+    means we detect sleep reliably and can click the wake-up button.
+    """
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
     try:
-        r = requests.get(url, timeout=TIMEOUT_SECONDS, allow_redirects=True)
+        response = page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_SECONDS * 1_000)
+        status_code = response.status if response else 0
 
-        # Detect Streamlit's sleep page — it returns 200 but is not the live app
-        if r.status_code == 200 and "gone to sleep" in r.text.lower():
-            print(f"          App is sleeping — launching browser to wake it up...")
-            ok, msg = wake_up_sleeping_app(url)
-            return ok, r.status_code, msg
+        # Detect the sleep page from the rendered content
+        if page.locator("text=gone to sleep").count() > 0:
+            print(f"          App is sleeping — trying to wake it up...")
 
-        ok = r.status_code < 500
-        return ok, r.status_code, f"HTTP {r.status_code}"
-    except requests.exceptions.Timeout:
-        return False, 0, f"Timed out after {TIMEOUT_SECONDS}s"
-    except requests.exceptions.ConnectionError as e:
-        return False, 0, f"Connection error — {e}"
+            # Click "Yes, get this app back up!"
+            try:
+                page.locator("button:has-text('Yes')").first.click(timeout=5_000)
+            except PlaywrightTimeoutError:
+                pass  # No button — some versions auto-wake on navigation
+
+            # Wait for the live app's root element to appear
+            try:
+                page.wait_for_selector(
+                    "[data-testid='stApp']",
+                    timeout=WAKE_TIMEOUT_SECONDS * 1_000,
+                )
+                return True, status_code, "Woken up successfully"
+            except PlaywrightTimeoutError:
+                if "gone to sleep" not in page.content().lower():
+                    return True, status_code, "Woken up (app responded)"
+                return False, status_code, f"Did not wake within {WAKE_TIMEOUT_SECONDS}s"
+
+        # App is awake
+        ok = status_code < 500
+        return ok, status_code, f"HTTP {status_code}"
+
+    except PlaywrightTimeoutError:
+        return False, 0, f"Timed out after {NAV_TIMEOUT_SECONDS}s"
     except Exception as e:
         return False, 0, str(e)
 
 
 def main():
+    from playwright.sync_api import sync_playwright
+
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"Streamlit App Pinger  |  {now}")
     print("─" * 55)
@@ -126,12 +104,19 @@ def main():
     print(f"Pinging {len(APPS)} app(s)...\n")
 
     results = []
-    for url in APPS:
-        ok, code, msg = ping(url)
-        results.append((url, ok, msg))
-        status = "OK  " if ok else "FAIL"
-        print(f"  [{status}]  {url}")
-        print(f"          {msg}\n")
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for url in APPS:
+            page = browser.new_page()
+            try:
+                ok, code, msg = ping(page, url)
+            finally:
+                page.close()
+            results.append((url, ok, msg))
+            status = "OK  " if ok else "FAIL"
+            print(f"  [{status}]  {url}")
+            print(f"          {msg}\n")
+        browser.close()
 
     failures = [r for r in results if not r[1]]
     print("─" * 55)
