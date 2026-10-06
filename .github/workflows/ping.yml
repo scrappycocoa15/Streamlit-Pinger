@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
 
- schedule:
+  schedule:
     #  Runs 4× per day (every 6 hours) as a reliability hedge against GitHub
     #  dropping or heavily delaying scheduled triggers under high load.
     #  Cron format: minute  hour  day-of-month  month  day-of-week
@@ -21,6 +21,10 @@ jobs:
   ping:
     name: Ping apps
     runs-on: ubuntu-latest
+
+    # Needed so the workflow can commit back to the repo to stay active
+    permissions:
+      contents: write
 
     steps:
       - name: Check out repo
@@ -39,3 +43,10 @@ jobs:
 
       - name: Run pinger
         run: python ping_apps.py
+
+      - name: Keep repo active
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keep repo active [skip ci]"
+          git push
