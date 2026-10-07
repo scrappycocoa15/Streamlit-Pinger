@@ -5,13 +5,7 @@ on:
     branches: [main]
 
   schedule:
-    #  Runs 4× per day (every 6 hours) as a reliability hedge against GitHub
-    #  dropping or heavily delaying scheduled triggers under high load.
-    #  Cron format: minute  hour  day-of-month  month  day-of-week
-    - cron: '0 4 * * *'   # 04:00 UTC
-    - cron: '0 10 * * *'  # 10:00 UTC
-    - cron: '0 16 * * *'  # 16:00 UTC
-    - cron: '0 22 * * *'  # 22:00 UTC
+    - cron: '0 * * * *'  # Every hour
 
   # Also allows you to trigger it manually from the GitHub Actions tab
   # (useful for testing or waking apps immediately).
